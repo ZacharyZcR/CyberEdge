@@ -1,7 +1,7 @@
 # 使用官方 Python 镜像作为基础镜像
 FROM python:3.10-slim
 
-sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+RUN sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
 
 # 安装必需的软件
 RUN apt-get update && apt-get install -y \
