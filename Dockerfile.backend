@@ -1,6 +1,8 @@
 # 使用官方 Python 镜像作为基础镜像
 FROM python:3.10-slim
 
+sudo sed -i 's/deb.debian.org/mirrors.ustc.edu.cn/g' /etc/apt/sources.list.d/debian.sources
+
 # 安装必需的软件
 RUN apt-get update && apt-get install -y \
     aria2 \
@@ -27,7 +29,7 @@ RUN aria2c -x 10 -s 10 https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffu
     && mv ffuf /usr/local/bin/
 
 # 克隆 OneForAll 仓库
-RUN git clone https://github.com/shmilylty/OneForAll.git /OneForAll
+RUN git clone https://gitee.com/shmilylty/OneForAll.git /OneForAll
 
 # 修改 OneForAll 中的脚本文件权限
 RUN chmod +x /OneForAll/oneforall.py
