@@ -23,9 +23,7 @@ COPY . /app
 # 安装项目依赖
 RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 
-# 使用 aria2c 下载 ffuf
-RUN aria2c -x 10 -s 10 https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffuf_2.1.0_linux_amd64.tar.gz \
-    && tar -xzf ffuf_2.1.0_linux_amd64.tar.gz \
+RUN tar -xzf ffuf_2.1.0_linux_amd64.tar.gz \
     && mv ffuf /usr/local/bin/
 
 # 克隆 OneForAll 仓库
