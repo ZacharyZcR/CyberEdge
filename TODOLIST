@@ -23,8 +23,10 @@
 2024-04-28 数据库模型重构 Solved
 2024-04-28 添加域名目标总线和项目总线 Unsolved
 
-2024-04-30 智能剪枝 Unsolved
+2024-04-30 智能剪枝 Solved
 
-2024-05-29 增加已查看功能 Unsolved
-2024-05-29 增加一个ExpFuzz字典 Unsolved
-2024-05-29 增加Subfind Unsolved
+2024-05-29 增加已查看功能 Solved
+2024-05-29 增加一个ExpFuzz字典 Solved
+2024-05-29 增加Subfinder Solved
+
+2024-06-13 调试Subfinder的ApiKey部分 Unsolved
