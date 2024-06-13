@@ -1,9 +1,10 @@
 import json
+import yaml
+import os
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-from django.db.models import Min
 
 from .models import Subdomain
 from common.models import ScanJob
@@ -68,12 +69,22 @@ def subdomain_task_status_view(request):
 
     if subdomain_scan_job.status in ['C', 'E']:  # 如果任务已完成或遇到错误
         response_data['task_result'] = {
-            'subdomains': list(subdomain_scan_job.subdomains.values('id', 'subdomain', 'ip_address', 'status', 'cname', 'port', 'title',
-                    'banner', 'addr', 'from_asset')),
+            'subdomains': list(subdomain_scan_job.subdomains.values(
+                'id',
+                'subdomain',
+                'ip_address',
+                'source',  # 新增源字段
+                'subdomain_http_status',  # 新增子域名HTTP状态码字段
+                'subdomain_https_status',  # 新增子域名HTTPS状态码字段
+                'ip_http_status',  # 新增IP HTTP状态码字段
+                'ip_https_status',  # 新增IP HTTPS状态码字段
+                'from_asset',  # 保留上游资产字段
+            )),
             'error_message': subdomain_scan_job.error_message
         }
 
     return JsonResponse(response_data)
+
 
 @csrf_exempt
 @require_http_methods(["GET"])  # 修改为接受GET请求
@@ -129,44 +140,31 @@ def delete_subdomain_view(request, id):
         return JsonResponse({'error': f'删除子域名时发生错误: {str(e)}'}, status=500)
 
 @csrf_exempt
-@require_http_methods(["POST"])
-def deduplicate_subdomains_view(request, task_id):
-    try:
-        subdomains = Subdomain.objects.filter(scan_job_id=task_id)
-        # 对于每个subdomain，找到最小的id值（即最早的记录）
-        min_ids = subdomains.values('subdomain').annotate(min_id=Min('id'))
-
-        # 构建一个包含所有最小id的列表，这些是将要保留的记录
-        min_id_list = [item['min_id'] for item in min_ids]
-
-        # 删除那些id不在min_id_list中的所有记录
-        deleted_count = subdomains.exclude(id__in=min_id_list).delete()[0]  # delete返回一个元组，第一个元素是删除的计数
-
-        return JsonResponse({
-            'message': f'成功删除{deleted_count}个重复的子域名。',
-            'deduplicated': True
-        }, status=200)
-
-    except ScanJob.DoesNotExist:
-        return JsonResponse({'error': '指定的ScanJob不存在，无法进行去重'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': f'去重操作时发生错误: {str(e)}'}, status=500)
-
-@csrf_exempt
 @require_http_methods(["DELETE"])
-def delete_http_code_subdomains_view(request, task_id):
+def delete_subdomain_http_ports_view(request, task_id):
     try:
-        # 获取指定ScanJob的所有子域名，其状态非'200'
-        non_200_subdomains = Subdomain.objects.filter(scan_job_id=task_id).exclude(status='200')
+        # 从请求中获取 http_code 参数
+        status_code = request.GET.get('status_code')
+        if not status_code:
+            return JsonResponse({'error': '缺少必要的 status_code 参数'}, status=400)
+
+        # 将status_code转换为整数
+        try:
+            status_code = int(status_code)
+        except ValueError:
+            return JsonResponse({'error': 'status_code参数必须是整数'}, status=400)
+
+        # 获取指定ScanJob的所有端口记录，其HTTP状态码等于指定的http_code
+        specific_http_ports = Subdomain.objects.filter(scan_job_id=task_id, subdomain_http_status=status_code)
 
         # 记录将要删除的记录数量
-        count_to_delete = non_200_subdomains.count()
+        count_to_delete = specific_http_ports.count()
 
         # 删除这些记录
-        non_200_subdomains.delete()
+        specific_http_ports.delete()
 
         return JsonResponse({
-            'message': f'成功删除{count_to_delete}个状态非200的子域名。',
+            'message': f'成功删除{count_to_delete}个HTTP状态码为{status_code}的端口。',
             'deleted': True
         }, status=200)
 
@@ -174,3 +172,166 @@ def delete_http_code_subdomains_view(request, task_id):
         return JsonResponse({'error': '指定的ScanJob不存在，无法执行删除'}, status=404)
     except Exception as e:
         return JsonResponse({'error': f'删除操作时发生错误: {str(e)}'}, status=500)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_subdomain_https_ports_view(request, task_id):
+    try:
+        # 从请求中获取 http_code 参数
+        status_code = request.GET.get('status_code')
+        if not status_code:
+            return JsonResponse({'error': '缺少必要的 status_code 参数'}, status=400)
+
+        # 将status_code转换为整数
+        try:
+            status_code = int(status_code)
+        except ValueError:
+            return JsonResponse({'error': 'status_code参数必须是整数'}, status=400)
+
+        # 获取指定ScanJob的所有端口记录，其HTTP状态码等于指定的http_code
+        specific_https_ports = Subdomain.objects.filter(scan_job_id=task_id, subdomain_https_status=status_code)
+
+        # 记录将要删除的记录数量
+        count_to_delete = specific_https_ports.count()
+
+        # 删除这些记录
+        specific_https_ports.delete()
+
+        return JsonResponse({
+            'message': f'成功删除{count_to_delete}个HTTP状态码为{status_code}的端口。',
+            'deleted': True
+        }, status=200)
+
+    except ScanJob.DoesNotExist:
+        return JsonResponse({'error': '指定的ScanJob不存在，无法执行删除'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'删除操作时发生错误: {str(e)}'}, status=500)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_ip_http_ports_view(request, task_id):
+    try:
+        # 从请求中获取 http_code 参数
+        status_code = request.GET.get('status_code')
+        if not status_code:
+            return JsonResponse({'error': '缺少必要的 status_code 参数'}, status=400)
+
+        # 将status_code转换为整数
+        try:
+            status_code = int(status_code)
+        except ValueError:
+            return JsonResponse({'error': 'status_code参数必须是整数'}, status=400)
+
+        # 获取指定ScanJob的所有端口记录，其HTTP状态码等于指定的http_code
+        specific_http_ports = Subdomain.objects.filter(scan_job_id=task_id, ip_http_status=status_code)
+
+        # 记录将要删除的记录数量
+        count_to_delete = specific_http_ports.count()
+
+        # 删除这些记录
+        specific_http_ports.delete()
+
+        return JsonResponse({
+            'message': f'成功删除{count_to_delete}个HTTP状态码为{status_code}的端口。',
+            'deleted': True
+        }, status=200)
+
+    except ScanJob.DoesNotExist:
+        return JsonResponse({'error': '指定的ScanJob不存在，无法执行删除'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'删除操作时发生错误: {str(e)}'}, status=500)
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_ip_https_ports_view(request, task_id):
+    try:
+        # 从请求中获取 http_code 参数
+        status_code = request.GET.get('status_code')
+        if not status_code:
+            return JsonResponse({'error': '缺少必要的 status_code 参数'}, status=400)
+
+        # 将status_code转换为整数
+        try:
+            status_code = int(status_code)
+        except ValueError:
+            return JsonResponse({'error': 'status_code参数必须是整数'}, status=400)
+
+        # 获取指定ScanJob的所有端口记录，其HTTP状态码等于指定的http_code
+        specific_https_ports = Subdomain.objects.filter(scan_job_id=task_id, ip_https_status=status_code)
+
+        # 记录将要删除的记录数量
+        count_to_delete = specific_https_ports.count()
+
+        # 删除这些记录
+        specific_https_ports.delete()
+
+        return JsonResponse({
+            'message': f'成功删除{count_to_delete}个HTTP状态码为{status_code}的端口。',
+            'deleted': True
+        }, status=200)
+
+    except ScanJob.DoesNotExist:
+        return JsonResponse({'error': '指定的ScanJob不存在，无法执行删除'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': f'删除操作时发生错误: {str(e)}'}, status=500)
+@csrf_exempt  # 允许跨站请求，不进行CSRF验证
+@require_http_methods(["GET"])  # 限制只能通过GET方法访问
+def get_subfinder_config_view(request):
+    # 根据操作系统确定配置文件路径
+    if os.name == 'posix':  # Unix/Linux/MacOS
+        home = os.path.expanduser('~')
+        if os.uname().sysname == 'Linux':
+            config_path = f"{home}/.config/subfinder/provider-config.yaml"
+        elif os.uname().sysname == 'Darwin':
+            config_path = f"{home}/Library/Application Support/subfinder/provider-config.yaml"
+    else:
+        return JsonResponse({'error': '不支持的操作系统。'}, status=500)
+
+    try:
+        with open(config_path, 'r') as file:
+            # 使用yaml库安全加载YAML文件
+            config_data = yaml.safe_load(file)
+        return JsonResponse(config_data)  # 以JSON格式返回配置数据
+    except FileNotFoundError:
+        return JsonResponse({'error': '未找到配置文件。'}, status=404)  # 文件未找到时以JSON格式返回404
+    except yaml.YAMLError as e:
+        return JsonResponse({'error': f'解析YAML文件错误：{str(e)}'}, status=500)  # YAML解析错误时以JSON格式返回500
+    except Exception as e:
+        return JsonResponse({'error': f'发生错误：{str(e)}'}, status=500)  # 其他错误以JSON格式返回500
+@csrf_exempt  # 允许跨站请求，不进行CSRF验证
+@require_http_methods(["POST"])  # 限制只能通过POST方法访问
+def update_subfinder_config_view(request):
+    if os.name == 'posix':  # Unix/Linux/MacOS
+        home = os.path.expanduser('~')
+        if os.uname().sysname == 'Linux':
+            config_path = f"{home}/.config/subfinder/provider-config.yaml"
+        elif os.uname().sysname == 'Darwin':
+            config_path = f"{home}/Library/Application Support/subfinder/provider-config.yaml"
+    else:
+        return JsonResponse({'error': '不支持的操作系统。'}, status=500)
+    data = json.loads(request.body.decode('utf-8'))
+    key = data.get('key')  # 从POST数据中获取键名
+    value = data.get('value')  # 从POST数据中获取键值
+
+    if not key or not value:
+        return JsonResponse({'error': '必须提供键名和键值。'}, status=400)
+
+    try:
+        # 读取现有的配置文件
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as file:
+                config_data = yaml.safe_load(file) or {}
+        else:
+            config_data = {}
+
+        # 更新配置文件
+        config_data[key] = value
+        with open(config_path, 'w') as file:
+            yaml.safe_dump(config_data, file)
+
+        return JsonResponse({'message': '配置已更新。'})
+
+    except yaml.YAMLError as e:
+        return JsonResponse({'error': f'处理YAML文件时出错：{str(e)}'}, status=500)
+    except Exception as e:
+        return JsonResponse({'error': f'发生错误：{str(e)}'}, status=500)
