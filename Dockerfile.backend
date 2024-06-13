@@ -28,7 +28,7 @@ RUN aria2c -x 10 -s 10 https://github.com/ffuf/ffuf/releases/download/v2.1.0/ffu
     && mv ffuf /usr/local/bin/
 
 # 使用 aria2c 下载 subfinder
-RUN aria2c -x 10 -s 10 https://github.com/projectdiscovery/subfinder/releases/tag/v2.6.6#:~:text=subfinder_2.6.6_linux_amd64.zip \
+RUN aria2c -x 10 -s 10 https://github.com/projectdiscovery/subfinder/releases/download/v2.6.6/subfinder_2.6.6_linux_amd64.zip \
     && unzip subfinder_2.6.6_linux_amd64.zip \
     && mv subfinder /usr/local/bin/
 
