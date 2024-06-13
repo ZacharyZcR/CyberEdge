@@ -23,7 +23,6 @@ idna==3.3
 kombu==5.3.6
 loguru==0.6.0
 prompt-toolkit==3.0.43
-psycopg2==2.9.9
 psycopg2-binary==2.9.9
 PySocks==1.7.1
 python-dateutil==2.9.0.post0
