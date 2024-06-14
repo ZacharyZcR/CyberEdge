@@ -70,7 +70,8 @@ INSTALLED_APPS = [
     "port_scanner",
     "path_scanner",
     "subdomain_scanner",
-    "full_scanner"
+    "full_scanner",
+    "reachability_checker"
 ]
 
 MIDDLEWARE = [

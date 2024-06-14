@@ -19,7 +19,7 @@ class ScanJob(models.Model):
 
     task_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, verbose_name='任务ID')
     target = models.CharField(max_length=255, verbose_name='扫描目标')
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='PATH', verbose_name='扫描类型')
+    type = models.CharField(max_length=100, choices=TYPE_CHOICES, default='PATH', verbose_name='扫描类型')
     status = models.CharField(max_length=1, choices=STATUS_CHOICES, default='P', verbose_name='扫描状态')
     start_time = models.DateTimeField(auto_now_add=True, verbose_name='开始时间')
     end_time = models.DateTimeField(null=True, blank=True, verbose_name='结束时间')

@@ -23,5 +23,6 @@ urlpatterns = [
     path('api/path_scanner/', include('path_scanner.urls')),
     path('api/subdomain_scanner/', include('subdomain_scanner.urls')),
     path('api/full_scanner/', include('full_scanner.urls')),
-    path('api/target/', include('target.urls'))
+    path('api/target/', include('target.urls')),
+    path('api/reachability_checker/', include('reachability_checker.urls'))
 ]
