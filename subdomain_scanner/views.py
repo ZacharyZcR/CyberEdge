@@ -74,10 +74,6 @@ def subdomain_task_status_view(request):
                 'subdomain',
                 'ip_address',
                 'source',  # 新增源字段
-                'subdomain_http_status',  # 新增子域名HTTP状态码字段
-                'subdomain_https_status',  # 新增子域名HTTPS状态码字段
-                'ip_http_status',  # 新增IP HTTP状态码字段
-                'ip_https_status',  # 新增IP HTTPS状态码字段
                 'from_asset',  # 保留上游资产字段
             )),
             'error_message': subdomain_scan_job.error_message
@@ -298,6 +294,7 @@ def get_subfinder_config_view(request):
         return JsonResponse({'error': f'解析YAML文件错误：{str(e)}'}, status=500)  # YAML解析错误时以JSON格式返回500
     except Exception as e:
         return JsonResponse({'error': f'发生错误：{str(e)}'}, status=500)  # 其他错误以JSON格式返回500
+
 @csrf_exempt  # 允许跨站请求，不进行CSRF验证
 @require_http_methods(["POST"])  # 限制只能通过POST方法访问
 def update_subfinder_config_view(request):

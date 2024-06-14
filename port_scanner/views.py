@@ -73,10 +73,6 @@ def task_status_view(request):
                     'service_name': port.service_name,
                     'protocol': port.protocol,
                     'state': port.state,
-                    'http_code': port.http_code,
-                    'http_title': port.http_title,
-                    'https_code': port.https_code,
-                    'https_title': port.https_title,
                     'from_asset': port.from_asset,
                 } for port in scan_job.ports.all()  # 假设ports是与ScanJob相关联的模型实例
             ],

@@ -66,8 +66,6 @@ def scan_ports(self, target, ports, from_job_id=None):
                         ip_address=target,
                         from_asset=target,
                     )
-                    new_port.http_code, new_port.http_title = check_protocol(target, port, 'http')
-                    new_port.https_code, new_port.https_title = check_protocol(target, port, 'https')
                     new_port.save()
 
         if not all_ports_found:
@@ -88,33 +86,3 @@ def scan_ports(self, target, ports, from_job_id=None):
         if scan_job.status == 'E':
             return {'error': scan_job.error_message}
         return {'message': f'扫描完成: {target}'}
-
-def check_protocol(ip, port, protocol):
-    url = f"{protocol}://{ip}:{port}"
-    try:
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/97.0.4692.71 Safari/537.36'
-        }
-        response = requests.get(url, headers=headers, timeout=10, verify=False)  # 禁用SSL证书验证
-        status_code = response.status_code
-        try:
-            encoding = response.apparent_encoding
-            # 使用指定的编码格式解码响应内容
-            decoded_content = response.content.decode(encoding)
-            # 使用BeautifulSoup解析HTML
-            soup = BeautifulSoup(decoded_content, 'html.parser')
-            # 获取标题
-            title = soup.title.string
-        except:
-            title = '标题获取失败'
-        # 只要请求没有引发异常，我们就认为端口支持HTTP/HTTPS
-        return status_code, title
-    except requests.exceptions.ConnectionError:
-        # 连接错误意味着无法建立TCP连接
-        return '000', '标题获取失败'
-    except requests.exceptions.Timeout:
-        # 超时意味着服务器没有在预定时间内响应
-        return '000', '标题获取失败'
-    except requests.exceptions.RequestException:
-        # 处理其他所有请求相关的异常
-        return '000', '标题获取失败'

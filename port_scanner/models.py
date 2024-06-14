@@ -9,15 +9,6 @@ class Port(models.Model):
     protocol = models.CharField(max_length=10, verbose_name='协议', null=True, blank=True)
     ip_address = models.CharField(max_length=15, verbose_name='IP地址')
     state = models.CharField(max_length=20, verbose_name='状态')
-
-    # HTTP相关字段
-    http_title = models.CharField(max_length=200, verbose_name='HTTP标题', null=True, blank=True)
-    http_code = models.IntegerField(verbose_name='HTTP状态码', null=True, blank=True)
-
-    # HTTPS相关字段
-    https_title = models.CharField(max_length=200, verbose_name='HTTPS标题', null=True, blank=True)
-    https_code = models.IntegerField(verbose_name='HTTPS状态码', null=True, blank=True)
-
     from_asset = models.CharField(max_length=200, verbose_name='上游资产', null=True, blank=True)
 
     @property
